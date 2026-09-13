@@ -90,6 +90,8 @@ enum Ctrl : unsigned {
     MixerWorstGapMicros,/* mixer: longest time between two renders while the ring was below target */
     WorkletMaxBurst,    /* worklet: most frames pulled within 2 ms of wall time (the device's callback size) */
     PeriodFrames,       /* backend: the chunk the mixer renders (mUpdateSize) */
+    RecentBurst,        /* worklet: the largest pull in the last ~1-2 s of audio (see mixerProc) */
+    MixerTarget,        /* mixer: the fill level it is currently keeping (>= mBufferSize) */
     NumCtrl
 };
 
@@ -110,6 +112,9 @@ class AlsoftWebProcessor extends AudioWorkletProcessor {
     this.primed = false;
     this.burstStart = 0;
     this.burst = 0;
+    this.windowFrames = 0;
+    this.windowMax = 0;
+    this.prevWindowMax = 0;
   }
   process(inputs, outputs) {
     const i32 = this.i32, c = this.c, out = outputs[0];
@@ -119,6 +124,16 @@ class AlsoftWebProcessor extends AudioWorkletProcessor {
     if (now - this.burstStart > 2) { this.burstStart = now; this.burst = 0; }
     this.burst += n;
     if (this.burst > i32[c + 11]) i32[c + 11] = this.burst;
+    /* Recent burst: the max over this ~1 s window and the previous one, so a one-off pull at start-up
+     * ages out instead of keeping the ring deep for the whole session. */
+    if (this.burst > this.windowMax) this.windowMax = this.burst;
+    this.windowFrames += n;
+    if (this.windowFrames >= sampleRate) {
+      this.prevWindowMax = this.windowMax;
+      this.windowMax = 0;
+      this.windowFrames = 0;
+    }
+    i32[c + 13] = Math.max(this.windowMax, this.prevWindowMax);
     const r = i32[c] >>> 0, w = i32[c + 1] >>> 0;
     const avail = (w - r) >>> 0;
     if (!this.primed) {
@@ -221,6 +236,8 @@ EM_JS(void, alsoft_web_start, (int ctrl, int data, int cap, int ch, int prime, i
         ringFrames: ((i32[c + 1] >>> 0) - (i32[c] >>> 0)) >>> 0,
         bufferFrames: prime,
         periodFrames: i32[c + 12],
+        recentBurstFrames: i32[c + 13],
+        targetFrames: i32[c + 14],
     });
     /* Test hook: empty the ring as the worklet sees it, so a harness can prove the underrun counter
      * counts (the positive control for "0 underruns"). Costs one glitch; nothing calls it in play. */
@@ -288,7 +305,7 @@ void WebBackend::mixerProc()
     althrd_setname(GetMixerThreadName());
 
     const auto update = mDevice->mUpdateSize;
-    const auto target = mDevice->mBufferSize;
+    const auto minTarget = mDevice->mBufferSize;
     const auto cap = mCapacity;
     const auto nch = mChannels;
     auto ptrs = std::array<void*,MaxOutputChannels>{};
@@ -297,6 +314,15 @@ void WebBackend::mixerProc()
     while(!mKillNow.load(std::memory_order_acquire)
         && mDevice->Connected.load(std::memory_order_acquire))
     {
+        /* THE TARGET ADAPTS TO THE BROWSER. The worklet is pulled in bursts as large as the browser's own
+         * output callback (several quanta back to back, faster than this thread can wake), so a ring smaller
+         * than that burst underruns on every callback whatever the CPU: 5 ms x 2 against a ~1024-frame pull
+         * measured 2,765 underruns a minute (2.61 §2.5), and baseLatency under-reports the pull by half. So
+         * the configured size is a MINIMUM and the ring is kept at least one period above the largest recent
+         * pull. The worklet still primes at the configured size, which this target never goes below. */
+        const auto burst = static_cast<unsigned>(std::max(mCtrl[RecentBurst], 0));
+        const auto target = std::min(std::max(minTarget, burst + update), cap - update);
+        mCtrl[MixerTarget] = static_cast<std::int32_t>(target);
         const auto r = static_cast<std::uint32_t>(mCtrl[ReadPos]);
         const auto w = static_cast<std::uint32_t>(mCtrl[WritePos]);
         if(w - r >= target)
@@ -413,7 +439,9 @@ auto WebBackend::reset() -> bool
 void WebBackend::start()
 {
     mChannels = mDevice->channelsFromFmt();
-    mCapacity = std::bit_ceil(mDevice->mBufferSize * 2u);
+    /* Room for the configured ring AND for the adaptive target above it (a pull of up to ~4 s of 128-frame
+     * quanta at once is not a browser we need to play on). 16384 frames x 8 channels is 524 KB. */
+    mCapacity = std::bit_ceil(std::max(mDevice->mBufferSize * 2u, 16384u));
     mRing.assign(std::size_t{mCapacity} * mChannels, 0.0f);
     /* Everything but the generation restarts at zero. A processor left over from the previous start()
      * may still run a quantum or two after its node was disconnected; the new generation makes it end

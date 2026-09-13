@@ -29,6 +29,12 @@
 #ifdef __APPLE__
 #include <CoreFoundation/CoreFoundation.h>
 #endif
+#ifdef __EMSCRIPTEN__
+#include <emscripten/emscripten.h>
+#include <emscripten/proxying.h>
+#include <emscripten/threading.h>
+#include <sstream>
+#endif
 
 #include <algorithm>
 #include <array>
@@ -37,6 +43,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <fstream>
+#include <functional>
 #include <istream>
 #include <limits>
 #include <ranges>
@@ -187,6 +194,14 @@ auto expdup(std::string_view str) -> std::string
 
     return output;
 }
+
+#ifdef __EMSCRIPTEN__
+EM_JS_DEPS(alsoft_config, "$stringToNewUTF8");
+EM_JS(char*, alsoft_page_config, (), {
+    const text = typeof Module !== "undefined" ? Module["alsoftConfig"] : undefined;
+    return typeof text === "string" && text.length ? stringToNewUTF8(text) : 0;
+});
+#endif
 
 void LoadConfigFromFile(std::istream &f)
 {
@@ -533,6 +548,34 @@ void ReadALConfig()
         if(auto f = std::ifstream{*confname}; f.is_open())
             LoadConfigFromFile(f);
     }
+
+#ifdef __EMSCRIPTEN__
+    /* A page has no config directory the player can reach, so the host page may hand over an alsoft.conf
+     * as text: Module.alsoftConfig, read last so it wins. It runs on the browser main thread, where the
+     * host's Module lives (a pthread has its own). */
+    auto text = std::string{};
+    auto fetch = [&text] {
+        if(char *const cfg{alsoft_page_config()})
+        {
+            text = cfg;
+            free(cfg);
+        }
+    };
+    if(emscripten_is_main_runtime_thread())
+        fetch();
+    else
+    {
+        auto fn = std::function<void()>{fetch};
+        emscripten_proxy_sync(emscripten_proxy_get_system_queue(), emscripten_main_runtime_thread_id(),
+            [](void *arg) { (*static_cast<std::function<void()>*>(arg))(); }, &fn);
+    }
+    if(!text.empty())
+    {
+        TRACE("Loading config from the page (Module.alsoftConfig)...");
+        auto f = std::istringstream{text};
+        LoadConfigFromFile(f);
+    }
+#endif
 }
 #endif
 

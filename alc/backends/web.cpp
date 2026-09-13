@@ -51,6 +51,7 @@
 #include <array>
 #include <atomic>
 #include <bit>
+#include <cmath>
 #include <cstdint>
 #include <exception>
 #include <thread>
@@ -65,6 +66,7 @@
 #include "core/device.h"
 #include "core/helpers.h"
 #include "core/logging.h"
+#include "alc/alconfig.h"
 
 
 namespace {
@@ -87,6 +89,7 @@ enum Ctrl : unsigned {
     Generation,         /* backend: bumped per start(); a processor from an earlier start() ends itself */
     MixerWorstGapMicros,/* mixer: longest time between two renders while the ring was below target */
     WorkletMaxBurst,    /* worklet: most frames pulled within 2 ms of wall time (the device's callback size) */
+    PeriodFrames,       /* backend: the chunk the mixer renders (mUpdateSize) */
     NumCtrl
 };
 
@@ -217,6 +220,7 @@ EM_JS(void, alsoft_web_start, (int ctrl, int data, int cap, int ch, int prime, i
         workletMaxBurst: i32[c + 11],
         ringFrames: ((i32[c + 1] >>> 0) - (i32[c] >>> 0)) >>> 0,
         bufferFrames: prime,
+        periodFrames: i32[c + 12],
     });
     /* Test hook: empty the ring as the worklet sees it, so a harness can prove the underrun counter
      * counts (the positive control for "0 underruns"). Costs one glitch; nothing calls it in play. */
@@ -380,10 +384,24 @@ auto WebBackend::reset() -> bool
     mDevice->mAmbiOrder = 0;
     mDevice->FmtType = DevFmtFloat;
 
-    /* 10 ms chunks, 30 ms ring target: under the 40 ms added-latency budget, and deep enough to ride
-     * through a cold-JIT chunk (measured 8-20 ms in the first second, 2.61 §0.2). */
-    mDevice->mUpdateSize = std::max(mDevice->mSampleRate / 100u, 128u);
-    mDevice->mBufferSize = mDevice->mUpdateSize * 3u;
+    /* Period and ring depth. Defaults: 10 ms chunks and a 3-period (30 ms) ring, under the 40 ms
+     * added-latency budget and measured clean (2.61 §2.3). A player on a fast machine can go lower:
+     *   [web] period-ms = N        the chunk in milliseconds (independent of the output rate)
+     *   [general] period_size = N  the standard key, in frames; wins over period-ms
+     *   [general] periods = N      ring depth in periods, 2..16
+     * openal-soft computed its own period_size/periods before calling reset(), but with its desktop
+     * defaults; the web defaults above are deliberate, so the config is re-read here instead. */
+    auto periodFrames = std::max(mDevice->mSampleRate / 100u, 128u);
+    if(auto const ms = ConfigValueU32(mDeviceName, "web", "period-ms"))
+        periodFrames = static_cast<unsigned>(std::lround(double(mDevice->mSampleRate) * *ms / 1000.0));
+    if(auto const frames = ConfigValueU32(mDeviceName, {}, "period_size"))
+        periodFrames = *frames;
+    periodFrames = std::clamp(periodFrames, 128u, 8192u);
+    auto periods = 3u;
+    if(auto const n = ConfigValueU32(mDeviceName, {}, "periods"))
+        periods = std::clamp(*n, 2u, 16u);
+    mDevice->mUpdateSize = periodFrames;
+    mDevice->mBufferSize = periodFrames * periods;
 
     setDefaultWFXChannelOrder();
     TRACE("Web Audio: {}hz, {} channel(s) (destination max {}), update {}, buffer {}",
@@ -403,6 +421,7 @@ void WebBackend::start()
     const auto generation = mCtrl[Generation] + 1;
     mCtrl.fill(0);
     mCtrl[Generation] = generation;
+    mCtrl[PeriodFrames] = static_cast<std::int32_t>(mDevice->mUpdateSize);
 
     const auto ctrl = static_cast<int>(reinterpret_cast<std::uintptr_t>(mCtrl.data()));
     const auto data = static_cast<int>(reinterpret_cast<std::uintptr_t>(mRing.data()));

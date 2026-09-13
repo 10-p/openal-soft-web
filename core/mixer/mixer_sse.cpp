@@ -1,6 +1,8 @@
 #include "config.h"
 
+#ifndef __EMSCRIPTEN__
 #include <mmintrin.h>
+#endif
 #include <xmmintrin.h>
 
 #include <algorithm>

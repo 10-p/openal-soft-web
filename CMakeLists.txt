@@ -407,7 +407,7 @@ else()
         list(APPEND C_FLAGS -Werror=undef -Werror=format-security
             $<$<COMPILE_LANGUAGE:C>:-Werror=implicit -Werror=incompatible-pointer-types
                 -Werror=int-conversion>)
-        if(HAVE_WFUNCTION_EFFECTS)
+        if(HAVE_WFUNCTION_EFFECTS AND NOT EMSCRIPTEN)
             list(APPEND C_FLAGS $<$<COMPILE_LANGUAGE:CXX>:-Werror=function-effects>)
         endif()
     endif()

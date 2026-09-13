@@ -163,6 +163,9 @@
 #if HAVE_WAVE
 #include "backends/wave.h"
 #endif
+#if HAVE_WEB
+#include "backends/web.h"
+#endif
 
 #if ALSOFT_EAX
 #include "al/eax/api.h"
@@ -279,6 +282,9 @@ std::array BackendList{
 #endif
 #if HAVE_JACK
     BackendInfo{"jack"sv, JackBackendFactory::getFactory},
+#endif
+#if HAVE_WEB
+    BackendInfo{"web"sv, WebBackendFactory::getFactory},
 #endif
 
     BackendInfo{"null"sv, NullBackendFactory::getFactory},

@@ -33,3 +33,5 @@
 #cmakedefine01 HAVE_SDL3
 
 #cmakedefine01 HAVE_SDL2
+
+#cmakedefine01 HAVE_WEB

@@ -1053,6 +1053,7 @@ set(HAVE_OPENSL     0)
 set(HAVE_OBOE       0)
 set(HAVE_WAVE       0)
 set(HAVE_SDL2       0)
+set(HAVE_WEB        0)
 set(HAVE_SDL3       0)
 
 if(WIN32 OR HAVE_DLFCN_H)
@@ -1419,6 +1420,19 @@ if(ALSOFT_BACKEND_SDL2 AND NOT HAVE_SDL3)
 endif()
 if(ALSOFT_REQUIRE_SDL2 AND NOT HAVE_SDL2)
     message(FATAL_ERROR "Failed to enable required SDL2 backend")
+endif()
+
+# Web Audio backend (Emscripten, threaded builds): a mixer pthread renders into shared memory that an
+# AudioWorklet plays. See alc/backends/web.cpp.
+option(ALSOFT_BACKEND_WEB "Enable Web Audio backend (Emscripten -pthread builds)" ${EMSCRIPTEN})
+if(ALSOFT_BACKEND_WEB)
+    if(NOT EMSCRIPTEN)
+        message(FATAL_ERROR "The Web Audio backend needs Emscripten")
+    endif()
+    set(HAVE_WEB 1)
+    set(BACKENDS  "${BACKENDS} WebAudio,")
+    list(APPEND ALC_SRCS alc/backends/web.cpp)
+    list(APPEND ALC_HDRS alc/backends/web.h)
 endif()
 
 # Optionally enable the Wave Writer backend

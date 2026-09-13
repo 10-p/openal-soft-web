@@ -407,7 +407,11 @@ else()
         list(APPEND C_FLAGS -Werror=undef -Werror=format-security
             $<$<COMPILE_LANGUAGE:C>:-Werror=implicit -Werror=incompatible-pointer-types
                 -Werror=int-conversion>)
-        if(HAVE_WFUNCTION_EFFECTS AND NOT EMSCRIPTEN)
+        # ufront: newer clangs reject this codebase under -Werror=function-effects (operator""_uz and the
+        # std::ranges lambdas in the mixers are "not nonblocking"), and the flag check cannot see that.
+        # Measured failing: clang 23 (emsdk 5.0.7) and clang 21 (Android NDK r30); upstream builds with older
+        # clangs. It is a strictness knob, not a feature: keep it for the compilers it was written against.
+        if(HAVE_WFUNCTION_EFFECTS AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 21)
             list(APPEND C_FLAGS $<$<COMPILE_LANGUAGE:CXX>:-Werror=function-effects>)
         endif()
     endif()

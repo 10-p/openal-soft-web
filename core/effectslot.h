@@ -31,6 +31,7 @@ enum class EffectSlotType : unsigned char {
     PitchShifter,
     RingModulator,
     VocalMorpher,
+    GalaxyReverb,
 };
 
 struct EffectSlotProps {

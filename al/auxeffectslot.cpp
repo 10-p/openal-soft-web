@@ -98,6 +98,7 @@ auto getFactoryByType(EffectSlotType const type) -> gsl::not_null<EffectStateFac
     case EffectSlotType::RingModulator: return ModulatorStateFactory_getFactory();
     case EffectSlotType::PitchShifter: return PshifterStateFactory_getFactory();
     case EffectSlotType::VocalMorpher: return VmorpherStateFactory_getFactory();
+    case EffectSlotType::GalaxyReverb: return GalaxyReverbStateFactory_getFactory();
     }
     throw std::runtime_error{al::format("Unexpected effect slot type: {:#x}",
         al::to_underlying(type))};
@@ -265,6 +266,7 @@ constexpr auto EffectSlotTypeFromEnum(ALenum const type) noexcept -> EffectSlotT
     case AL_EFFECT_DEDICATED_LOW_FREQUENCY_EFFECT: return EffectSlotType::Dedicated;
     case AL_EFFECT_DEDICATED_DIALOGUE: return EffectSlotType::Dedicated;
     case AL_EFFECT_CONVOLUTION_SOFT: return EffectSlotType::Convolution;
+    case AL_EFFECT_GALAXY_REVERB_UFRONT: return EffectSlotType::GalaxyReverb;
     }
     ERR("Unhandled effect enum: {:#04x}", as_unsigned(type));
     return EffectSlotType::None;

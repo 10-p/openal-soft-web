@@ -106,6 +106,7 @@ auto getContextExtensions() noexcept -> std::vector<std::string_view>
         "AL_SOFT_source_start_delay"sv,
         "AL_SOFT_UHJ"sv,
         "AL_SOFT_UHJ_ex"sv,
+        "AL_UFRONT_galaxy_reverb"sv,
     });
 }
 

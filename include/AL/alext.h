@@ -245,6 +245,34 @@ AL_API void AL_APIENTRY alRequestFoldbackStop(void) AL_API_NOEXCEPT;
 #define AL_EFFECT_DEDICATED_LOW_FREQUENCY_EFFECT 0x9000
 #endif
 
+/* ufront (10-p/openal-soft-web): the Galaxy Sound System's sample reverb — the "classic" reverb of
+ * Unreal (1998) and Unreal Tournament (1999) — recovered from GALAXY.LIB and carried as an effect
+ * type of its own. Three stereo all-pass stages in series, each with a per-channel tap delay and a
+ * one-pole low-pass in its feedback, the previous output cross-fed into the input. The parameters are
+ * ZoneInfo's, in the units UnGalaxy.cpp handed to glxSetSampleReverb: Volume = MasterGain/255,
+ * HFDamp = CutoffHz, Delay[i].Time = Delay[i]/500 s (0.001..0.340), Delay[i].Gain = Gain[i]/255
+ * (0.001..0.999). Defaults are ZoneInfo's defaultproperties. The DSP is 16-bit fixed point and
+ * bit-exact with the original object (its call-boundary quirks excepted); see alc/effects/galaxyreverb.cpp.
+ */
+#ifndef AL_UFRONT_galaxy_reverb
+#define AL_UFRONT_galaxy_reverb 1
+#define AL_EFFECT_GALAXY_REVERB_UFRONT           0xB000
+#define AL_GALAXY_REVERB_VOLUME                  0x0001  /* float */
+#define AL_GALAXY_REVERB_HFDAMP                  0x0002  /* float, Hz */
+#define AL_GALAXY_REVERB_DELAY_TIMES             0x0003  /* float[6], seconds */
+#define AL_GALAXY_REVERB_DELAY_GAINS             0x0004  /* float[6] */
+#define AL_GALAXY_REVERB_MIN_VOLUME              (-1.0f)
+#define AL_GALAXY_REVERB_MAX_VOLUME              (1.0f)
+#define AL_GALAXY_REVERB_DEFAULT_VOLUME          (0.39215687f)   /* MasterGain 100 */
+#define AL_GALAXY_REVERB_MIN_HFDAMP              (0.0f)
+#define AL_GALAXY_REVERB_MAX_HFDAMP              (96000.0f)     /* clamped to the device rate in use */
+#define AL_GALAXY_REVERB_DEFAULT_HFDAMP          (6000.0f)      /* CutoffHz 6000 */
+#define AL_GALAXY_REVERB_MIN_DELAY_TIME          (0.0f)         /* 0 is taken as 0.001, as Galaxy did */
+#define AL_GALAXY_REVERB_MAX_DELAY_TIME          (0.34f)
+#define AL_GALAXY_REVERB_MIN_DELAY_GAIN          (0.0f)
+#define AL_GALAXY_REVERB_MAX_DELAY_GAIN          (1.0f)
+#endif
+
 #ifndef AL_SOFT_buffer_samples
 #define AL_SOFT_buffer_samples 1
 /* Channel configurations */

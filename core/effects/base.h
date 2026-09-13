@@ -172,6 +172,14 @@ struct ConvolutionProps {
     std::array<float,3> OrientUp;
 };
 
+/* ufront: the Galaxy Sound System sample reverb (AL_UFRONT_galaxy_reverb), ZoneInfo's parameters. */
+struct GalaxyReverbProps {
+    float Volume;
+    float HFDamp;
+    std::array<float,6> DelayTimes;
+    std::array<float,6> DelayGains;
+};
+
 using EffectProps = std::variant<std::monostate,
     ReverbProps,
     AutowahProps,
@@ -185,7 +193,8 @@ using EffectProps = std::variant<std::monostate,
     PshifterProps,
     VmorpherProps,
     DedicatedProps,
-    ConvolutionProps>;
+    ConvolutionProps,
+    GalaxyReverbProps>;
 
 
 struct EffectTarget {

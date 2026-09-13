@@ -33,6 +33,7 @@ enum {
     VMORPHER_EFFECT,
     DEDICATED_EFFECT,
     CONVOLUTION_EFFECT,
+    GALAXYREVERB_EFFECT,
 
     MAX_EFFECTS
 };
@@ -43,13 +44,14 @@ struct EffectList {
     ALuint type;
     ALenum val;
 };
-DECL_HIDDEN constinit extern const std::array<EffectList,16> gEffectList;
+DECL_HIDDEN constinit extern const std::array<EffectList,17> gEffectList;
 
 using EffectHandlerVariant = std::variant<NullEffectHandler,ReverbEffectHandler,
     StdReverbEffectHandler,AutowahEffectHandler,ChorusEffectHandler,CompressorEffectHandler,
     DistortionEffectHandler,EchoEffectHandler,EqualizerEffectHandler,FlangerEffectHandler,
     FshifterEffectHandler,ModulatorEffectHandler,PshifterEffectHandler,VmorpherEffectHandler,
-    DedicatedDialogEffectHandler,DedicatedLfeEffectHandler,ConvolutionEffectHandler>;
+    DedicatedDialogEffectHandler,DedicatedLfeEffectHandler,ConvolutionEffectHandler,
+        GalaxyReverbEffectHandler>;
 
 namespace al {
 

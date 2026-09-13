@@ -42,6 +42,7 @@ DECL_HANDLER(VmorpherEffectHandler, VmorpherProps)
 DECL_HANDLER(DedicatedDialogEffectHandler, DedicatedProps)
 DECL_HANDLER(DedicatedLfeEffectHandler, DedicatedProps)
 DECL_HANDLER(ConvolutionEffectHandler, ConvolutionProps)
+DECL_HANDLER(GalaxyReverbEffectHandler, GalaxyReverbProps)
 #undef DECL_HANDLER
 
 
@@ -63,5 +64,6 @@ DECL_HIDDEN extern constinit const EffectProps VmorpherEffectProps;
 DECL_HIDDEN extern constinit const EffectProps DedicatedDialogEffectProps;
 DECL_HIDDEN extern constinit const EffectProps DedicatedLfeEffectProps;
 DECL_HIDDEN extern constinit const EffectProps ConvolutionEffectProps;
+DECL_HIDDEN extern constinit const EffectProps GalaxyReverbEffectProps;
 
 #endif /* AL_EFFECTS_EFFECTS_H */

@@ -28,4 +28,6 @@ auto DedicatedStateFactory_getFactory() -> gsl::not_null<EffectStateFactory*>;
 
 auto ConvolutionStateFactory_getFactory() -> gsl::not_null<EffectStateFactory*>;
 
+auto GalaxyReverbStateFactory_getFactory() -> gsl::not_null<EffectStateFactory*>;
+
 #endif /* EFFECTS_BASE_H */

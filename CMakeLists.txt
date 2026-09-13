@@ -932,6 +932,7 @@ set(OPENAL_SRCS
     al/effects/dedicated.cpp
     al/effects/distortion.cpp
     al/effects/echo.cpp
+    al/effects/galaxyreverb.cpp
     al/effects/effects.cpp
     al/effects/equalizer.cpp
     al/effects/fshifter.cpp
@@ -973,6 +974,7 @@ set(ALC_SRCS
     alc/effects/dedicated.cpp
     alc/effects/distortion.cpp
     alc/effects/echo.cpp
+    alc/effects/galaxyreverb.cpp
     alc/effects/equalizer.cpp
     alc/effects/fshifter.cpp
     alc/effects/modulator.cpp

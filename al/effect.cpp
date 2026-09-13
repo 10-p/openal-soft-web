@@ -61,7 +61,7 @@ import logging;
 #endif
 
 
-constinit const std::array<EffectList,16> gEffectList{{
+constinit const std::array<EffectList,17> gEffectList{{
     { "eaxreverb",   EAXREVERB_EFFECT,   AL_EFFECT_EAXREVERB },
     { "reverb",      REVERB_EFFECT,      AL_EFFECT_REVERB },
     { "autowah",     AUTOWAH_EFFECT,     AL_EFFECT_AUTOWAH },
@@ -78,6 +78,7 @@ constinit const std::array<EffectList,16> gEffectList{{
     { "dedicated",   DEDICATED_EFFECT,   AL_EFFECT_DEDICATED_LOW_FREQUENCY_EFFECT },
     { "dedicated",   DEDICATED_EFFECT,   AL_EFFECT_DEDICATED_DIALOGUE },
     { "convolution", CONVOLUTION_EFFECT, AL_EFFECT_CONVOLUTION_SOFT },
+    { "galaxyreverb", GALAXYREVERB_EFFECT, AL_EFFECT_GALAXY_REVERB_UFRONT },
 }};
 
 
@@ -108,6 +109,7 @@ constexpr auto GetDefaultProps(ALenum const type) noexcept -> const EffectProps&
     case AL_EFFECT_DEDICATED_DIALOGUE: return DedicatedDialogEffectProps;
     case AL_EFFECT_DEDICATED_LOW_FREQUENCY_EFFECT: return DedicatedLfeEffectProps;
     case AL_EFFECT_CONVOLUTION_SOFT: return ConvolutionEffectProps;
+    case AL_EFFECT_GALAXY_REVERB_UFRONT: return GalaxyReverbEffectProps;
     }
     return NullEffectProps;
 }
@@ -138,6 +140,9 @@ void InitEffectParams(al::Effect *const effect, ALenum const type) noexcept
         break;
     case AL_EFFECT_CONVOLUTION_SOFT:
         effect->mPropsVariant.emplace<ConvolutionEffectHandler>();
+        break;
+    case AL_EFFECT_GALAXY_REVERB_UFRONT:
+        effect->mPropsVariant.emplace<GalaxyReverbEffectHandler>();
         break;
     }
     effect->mProps = GetDefaultProps(type);

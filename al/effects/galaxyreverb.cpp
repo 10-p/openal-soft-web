@@ -14,6 +14,7 @@
 #include "AL/efx.h"
 
 #include "alnumeric.h"
+#include "altypes.hpp" // the _uz literal: under HAVE_CXXMODULES (Android) `import alc.context;` does not carry it
 #include "effects.h"
 
 #if HAVE_CXXMODULES

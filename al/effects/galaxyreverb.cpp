@@ -1,7 +1,7 @@
 /**
  * ufront (10-p/openal-soft-web): AL_UFRONT_galaxy_reverb — the property handler for the Galaxy Sound
  * System sample reverb. The DSP is in alc/effects/galaxyreverb.cpp; the parameters are ZoneInfo's as
- * UnGalaxy.cpp mapped them (see include/AL/alext.h).
+ * the engine's Galaxy wrapper mapped them (see include/AL/alext.h).
  */
 
 #include "config.h"
@@ -29,12 +29,12 @@ namespace {
 consteval auto genDefaultProps() noexcept -> EffectProps
 {
     /* ZoneInfo defaultproperties: MasterGain=100, CutoffHz=6000, Delay(0)=20, Delay(1)=34, Gain(0)=150,
-     * Gain(1)=70, the other four taps 0 — which UnGalaxy's clamps turn into 0.001 s / 0.001. */
+     * Gain(1)=70, the other four taps 0 (Unreal 1's Galaxy wrapper passed them on unclamped). */
     return GalaxyReverbProps{
         .Volume     = AL_GALAXY_REVERB_DEFAULT_VOLUME,
         .HFDamp     = AL_GALAXY_REVERB_DEFAULT_HFDAMP,
-        .DelayTimes = {20.0f/500.0f, 34.0f/500.0f, 0.001f, 0.001f, 0.001f, 0.001f},
-        .DelayGains = {150.0f/255.0f, 70.0f/255.0f, 0.001f, 0.001f, 0.001f, 0.001f}};
+        .DelayTimes = {20.0f/500.0f, 34.0f/500.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+        .DelayGains = {150.0f/255.0f, 70.0f/255.0f, 0.0f, 0.0f, 0.0f, 0.0f}};
 }
 
 } // namespace

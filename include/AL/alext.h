@@ -245,14 +245,14 @@ AL_API void AL_APIENTRY alRequestFoldbackStop(void) AL_API_NOEXCEPT;
 #define AL_EFFECT_DEDICATED_LOW_FREQUENCY_EFFECT 0x9000
 #endif
 
-/* ufront (10-p/openal-soft-web): the Galaxy Sound System's sample reverb — the "classic" reverb of
- * Unreal (1998) and Unreal Tournament (1999) — recovered from GALAXY.LIB and carried as an effect
- * type of its own. Three stereo all-pass stages in series, each with a per-channel tap delay and a
- * one-pole low-pass in its feedback, the previous output cross-fed into the input. The parameters are
- * ZoneInfo's, in the units UnGalaxy.cpp handed to glxSetSampleReverb: Volume = MasterGain/255,
- * HFDamp = CutoffHz, Delay[i].Time = Delay[i]/500 s (0.001..0.340), Delay[i].Gain = Gain[i]/255
- * (0.001..0.999). Defaults are ZoneInfo's defaultproperties. The DSP is 16-bit fixed point and
- * bit-exact with the original object (its call-boundary quirks excepted); see alc/effects/galaxyreverb.cpp.
+/* ufront (10-p/openal-soft-web): the Galaxy Sound System's sample reverb — the "classic" zone reverb of
+ * Unreal (1998) — recovered from Unreal 1's Galaxy-s.lib (glxSetEffect + mmxEffect) and carried as an
+ * effect type of its own: six taps on one mono 16-bit ring, weighted, summed and low-passed, the result
+ * added to both channels and fed back into the ring with the send. The parameters are ZoneInfo's, in the
+ * units the engine's Galaxy wrapper handed to glxSetSampleReverb: Volume = MasterGain/255, HFDamp =
+ * CutoffHz, Delay[i].Time = Delay[i]/500 s (0..0.51), Delay[i].Gain = Gain[i]/255 (0..1). Defaults are
+ * ZoneInfo's defaultproperties. The DSP is 16-bit fixed point and bit-exact with the original objects;
+ * see alc/effects/galaxyreverb.cpp (which also records why UT v400's 1999 routine was replaced).
  */
 #ifndef AL_UFRONT_galaxy_reverb
 #define AL_UFRONT_galaxy_reverb 1
@@ -267,8 +267,8 @@ AL_API void AL_APIENTRY alRequestFoldbackStop(void) AL_API_NOEXCEPT;
 #define AL_GALAXY_REVERB_MIN_HFDAMP              (0.0f)
 #define AL_GALAXY_REVERB_MAX_HFDAMP              (96000.0f)     /* clamped to the device rate in use */
 #define AL_GALAXY_REVERB_DEFAULT_HFDAMP          (6000.0f)      /* CutoffHz 6000 */
-#define AL_GALAXY_REVERB_MIN_DELAY_TIME          (0.0f)         /* 0 is taken as 0.001, as Galaxy did */
-#define AL_GALAXY_REVERB_MAX_DELAY_TIME          (0.34f)
+#define AL_GALAXY_REVERB_MIN_DELAY_TIME          (0.0f)         /* 0 reads the oldest ring cell, as Galaxy did */
+#define AL_GALAXY_REVERB_MAX_DELAY_TIME          (0.51f)        /* Delay 255 / 500 */
 #define AL_GALAXY_REVERB_MIN_DELAY_GAIN          (0.0f)
 #define AL_GALAXY_REVERB_MAX_DELAY_GAIN          (1.0f)
 #endif

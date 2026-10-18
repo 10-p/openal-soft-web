@@ -1,6 +1,6 @@
 /**
  * OpenAL cross platform audio library
- * Web Audio backend for Emscripten builds (ufront).
+ * Web Audio backend for Emscripten builds.
  *
  * This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Library General Public
@@ -19,10 +19,10 @@
  * Or go to http://www.gnu.org/copyleft/lgpl.html
  */
 
-/* HOW IT WORKS
+/* How it works
  *
  *   app thread ── AL calls ──▶ openal-soft (same wasm module, no proxying)
- *   mixer pthread ── renderSamples ──▶ planar float ring in SHARED wasm memory
+ *   mixer pthread ── renderSamples ──▶ planar float ring in shared wasm memory
  *   AudioWorkletProcessor (browser audio thread, plain JS) ── reads the ring ──▶ destination
  *
  * The ring lives in the module's own memory, which is a SharedArrayBuffer in a threaded build, so the
@@ -36,7 +36,7 @@
  * Every JS call that touches the AudioContext runs on the browser main thread (OnMainThread), the
  * only thread Web Audio exists on. They happen at open/reset/start/stop, never per mix.
  *
- * CHANNELS. openal-soft renders at the channel count the output can actually play; the destination is
+ * Channels: openal-soft renders at the channel count the output can actually play; the destination is
  * never fed a layout it will discard. Web Audio downmixes only 1/2/4/6 channels ("speakers"
  * interpretation, which is kept on both the node and the destination); 8 channels have no downmix rule,
  * so 7.1 is chosen only when the destination reports >= 8. Headphones cannot be detected from a page, so
@@ -314,12 +314,8 @@ void WebBackend::mixerProc()
     while(!mKillNow.load(std::memory_order_acquire)
         && mDevice->Connected.load(std::memory_order_acquire))
     {
-        /* THE TARGET ADAPTS TO THE BROWSER. The worklet is pulled in bursts as large as the browser's own
-         * output callback (several quanta back to back, faster than this thread can wake), so a ring smaller
-         * than that burst underruns on every callback whatever the CPU: 5 ms x 2 against a ~1024-frame pull
-         * measured 2,765 underruns a minute (2.61 §2.5), and baseLatency under-reports the pull by half. So
-         * the configured size is a MINIMUM and the ring is kept at least one period above the largest recent
-         * pull. The worklet still primes at the configured size, which this target never goes below. */
+        /* The ring is kept one period above the largest recent pull, never below the configured size: the
+         * browser pulls bursts as large as its output callback, and baseLatency under-reports them. */
         const auto burst = static_cast<unsigned>(std::max(mCtrl[RecentBurst], 0));
         const auto target = std::min(std::max(minTarget, burst + update), cap - update);
         mCtrl[MixerTarget] = static_cast<std::int32_t>(target);
@@ -410,13 +406,13 @@ auto WebBackend::reset() -> bool
     mDevice->mAmbiOrder = 0;
     mDevice->FmtType = DevFmtFloat;
 
-    /* Period and ring depth. Defaults: 10 ms chunks and a 3-period (30 ms) ring, under the 40 ms
-     * added-latency budget and measured clean (2.61 §2.3). A player on a fast machine can go lower:
+    /* Period and ring depth. Defaults: 10 ms chunks and a 3-period (30 ms) ring, within a 40 ms
+     * added-latency budget. The config can go lower:
      *   [web] period-ms = N        the chunk in milliseconds (independent of the output rate)
      *   [general] period_size = N  the standard key, in frames; wins over period-ms
      *   [general] periods = N      ring depth in periods, 2..16
-     * openal-soft computed its own period_size/periods before calling reset(), but with its desktop
-     * defaults; the web defaults above are deliberate, so the config is re-read here instead. */
+     * openal-soft computes its own period_size/periods (desktop defaults) before calling reset(), so the
+     * config is re-read here. */
     auto periodFrames = std::max(mDevice->mSampleRate / 100u, 128u);
     if(auto const ms = ConfigValueU32(mDeviceName, "web", "period-ms"))
         periodFrames = static_cast<unsigned>(std::lround(double(mDevice->mSampleRate) * *ms / 1000.0));
@@ -439,7 +435,7 @@ auto WebBackend::reset() -> bool
 void WebBackend::start()
 {
     mChannels = mDevice->channelsFromFmt();
-    /* Room for the configured ring AND for the adaptive target above it (a pull of up to ~4 s of 128-frame
+    /* Room for the configured ring and for the adaptive target above it (a pull of up to ~4 s of 128-frame
      * quanta at once is not a browser we need to play on). 16384 frames x 8 channels is 524 KB. */
     mCapacity = std::bit_ceil(std::max(mDevice->mBufferSize * 2u, 16384u));
     mRing.assign(std::size_t{mCapacity} * mChannels, 0.0f);
